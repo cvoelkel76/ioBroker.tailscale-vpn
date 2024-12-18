@@ -1,0 +1,111 @@
+{
+    "common": {
+        "name": "tailscale-vpn",
+        "version": "0.0.1",
+        "news": {
+            "0.0.1": {
+                "en": "initial release",
+                "de": "Erstveröffentlichung",
+                "ru": "Начальная версия",
+                "pt": "lançamento inicial",
+                "nl": "Eerste uitgave",
+                "fr": "Première version",
+                "it": "Versione iniziale",
+                "es": "Versión inicial",
+                "pl": "Pierwsze wydanie",
+                "uk": "Початкова версія",
+                "zh-cn": "首次出版"
+            }
+        },
+        "titleLang": {
+            "en": "Tailscale VPN",
+            "de": "Tailscale VPN",
+            "ru": "Tailscale VPN",
+            "pt": "VPN em escala de cauda",
+            "nl": "Tailscale VPN",
+            "fr": "VPN à grande échelle",
+            "it": "VPN su larga scala",
+            "es": "VPN de escala final",
+            "pl": "Tailscale VPN",
+            "uk": "Tailscale VPN",
+            "zh-cn": "尾规模VPN"
+        },
+        "desc": {
+            "en": "Tailscale API access",
+            "de": "Tailscale-API-Zugriff",
+            "ru": "Доступ к API Tailscale",
+            "pt": "Acesso à API Tailscale",
+            "nl": "Tailscale API-toegang",
+            "fr": "Accès à l'API à grande échelle",
+            "it": "Accesso all'API Tailscale",
+            "es": "Acceso API de escala final",
+            "pl": "Dostęp do API Tailscale",
+            "uk": "Доступ до API Tailscale",
+            "zh-cn": "Tailscale API 访问"
+        },
+        "authors": [
+            "Hobbit <cvoelkel76@gmail.com>"
+        ],
+        "keywords": [
+            "tailscale",
+            "vpn"
+        ],
+        "licenseInformation": {
+            "type": "free",
+            "license": "MIT"
+        },
+        "platform": "Javascript/Node.js",
+        "icon": "tailscale-vpn.png",
+        "enabled": true,
+        "extIcon": "https://raw.githubusercontent.com/cvoelkel76/ioBroker.tailscale-vpn/main/admin/tailscale-vpn.png",
+        "readme": "https://github.com/cvoelkel76/ioBroker.tailscale-vpn/blob/main/README.md",
+        "loglevel": "info",
+        "tier": 3,
+        "mode": "daemon",
+        "type": "network",
+        "compact": true,
+        "connectionType": "cloud",
+        "dataSource": "poll",
+        "adminUI": {
+            "config": "json"
+        },
+        "dependencies": [
+            {
+                "js-controller": ">=6.0.11"
+            }
+        ],
+        "globalDependencies": [
+            {
+                "admin": "7.0.23"
+            }
+        ]
+    },
+    "native": {
+        "option1": true,
+        "option2": "42"
+    },
+    "objects": [],
+    "instanceObjects": [
+        {
+            "_id": "info",
+            "type": "channel",
+            "common": {
+                "name": "Information"
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.connection",
+            "type": "state",
+            "common": {
+                "role": "indicator.connected",
+                "name": "Device or service connected",
+                "type": "boolean",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        }
+    ]
+}
