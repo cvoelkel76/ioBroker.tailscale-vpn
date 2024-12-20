@@ -7,6 +7,11 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 const utils = require('@iobroker/adapter-core');
+const axios = require('axios');
+const { CookieJar } = require('tough-cookie');
+const Json2iob = require('json2iob');
+const { HttpsCookieAgent } = require('http-cookie-agent/http');
+const qs = require('qs');
 
 // Load your modules here, e.g.:
 // const fs = require("fs");
@@ -26,6 +31,15 @@ class TailscaleVpn extends utils.Adapter {
         // this.on('objectChange', this.onObjectChange.bind(this));
         // this.on('message', this.onMessage.bind(this));
         this.on('unload', this.onUnload.bind(this));
+        this.apiUrl = 'https://api.tailscale.com/api/v2';
+        this.json2iob = new Json2iob(this);
+        const jar = new CookieJar();
+        this.requestClient = axios.create({
+            httpsAgent: new HttpsCookieAgent({
+                rejectUnauthorized: false,
+                cookies: { jar },
+            }),
+        });
     }
 
     /**
@@ -37,55 +51,88 @@ class TailscaleVpn extends utils.Adapter {
         // Reset the connection indicator during startup
         this.setState('info.connection', false, true);
 
-        // The adapters config (in the instance object everything under the attribute "native") is accessible via
-        // this.config:
-        this.log.info('config option1: ' + this.config.option1);
-        this.log.info('config option2: ' + this.config.option2);
+        if (!this.config.tailnet) {
+            this.log.info('Tailnet ID not provided. Set Tailnet to default "-"');
+            this.config.tailnet = '-';
+        }
 
-        /*
-        For every state in the system there has to be also an object of type state
-        Here a simple template for a boolean variable named "testVariable"
-        Because every adapter instance uses its own unique namespace variable names can't collide with other adapters variables
-        */
-        await this.setObjectNotExistsAsync('testVariable', {
-            type: 'state',
-            common: {
-                name: 'testVariable',
-                type: 'boolean',
-                role: 'indicator',
-                read: true,
-                write: true,
+        this.log.info('Login to Tailscale API '+ this.apiUrl);
+        await this.login();
+
+        if (this.session.access_token) {
+            await this.getTailnetDevices();
+        }
+
+    }
+
+    async login() {
+        await this.requestClient({
+            method: 'post',
+            url: `${this.apiUrl}/oauth/token`,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
             },
-            native: {},
-        });
+            data: qs.stringify ({
+                client_id: this.config.clientid,
+                client_secret: this.config.secret,
+            })
+        })
+            .then((res) => {
+                if (res.data && res.data.access_token) {
+                    this.log.info('Login successful');
+                    this.session = res.data;
+                    this.setState('info.connection', true, true);
+                } else {
+                    this.log.error('Login failed: ' + JSON.stringify(res.data));
+                    return;
+                }
+            })
+            .catch((error) => {
+                this.log.error(error);
+                this.log.error('Login failed');
+                error.response && this.log.error(JSON.stringify(error.response.data));
+            });
+    }
 
-        // In order to get state updates, you need to subscribe to them. The following line adds a subscription for our variable we have created above.
-        this.subscribeStates('testVariable');
-        // You can also add a subscription for multiple states. The following line watches all states starting with "lights."
-        // this.subscribeStates('lights.*');
-        // Or, if you really must, you can also watch all states. Don't do this if you don't need to. Otherwise this will cause a lot of unnecessary load on the system:
-        // this.subscribeStates('*');
+    async getTailnetDevices() {
+        await this.requestClient({
+            method: 'get',
+            url: `${this.apiUrl}/tailnet/${this.config.tailnet}/devices?fields=all`,
+            headers: {
+                Authorization: this.session.token_type + ' ' + this.session.access_token,
+            },
+        })
+            .then(async (res) => {
+                if (res.data.devices) {
+                    this.log.info('found ' + res.data.devices.length + ' devices in tailnet "' + this.config.tailnet + '"');
 
-        /*
-            setState examples
-            you will notice that each setState will cause the stateChange event to fire (because of above subscribeStates cmd)
-        */
-        // the variable testVariable is set to true as command (ack=false)
-        await this.setStateAsync('testVariable', true);
+                    await this.setObjectNotExistsAsync('devices', {
+                        type: 'folder',
+                        common: {
+                            name: 'devices',
+                        },
+                        native: {},
+                    });
 
-        // same thing, but the value is flagged "ack"
-        // ack should be always set to true if the value is received from or acknowledged from the target system
-        await this.setStateAsync('testVariable', { val: true, ack: true });
+                    for (const device of res.data.devices) {
+                        const id = 'devices.' + device.id;
+                        const name = device.name;
+                        await this.setObjectNotExistsAsync(id, {
+                            type: 'device',
+                            common: {
+                                name: name,
+                            },
+                            native: {},
+                        });
 
-        // same thing, but the state is deleted after 30s (getState will return null afterwards)
-        await this.setStateAsync('testVariable', { val: true, ack: true, expire: 30 });
-
-        // examples for the checkPassword/checkGroup functions
-        let result = await this.checkPasswordAsync('admin', 'iobroker');
-        this.log.info('check user admin pw iobroker: ' + result);
-
-        result = await this.checkGroupAsync('admin', 'admin');
-        this.log.info('check group user admin group admin: ' + result);
+                        this.json2iob.parse(id, device, { forceIndex: true });
+                    }
+                }
+            })
+            .catch((error) => {
+                this.log.error(error);
+                error.response && this.log.error(JSON.stringify(error.response.data));
+            });
     }
 
     /**

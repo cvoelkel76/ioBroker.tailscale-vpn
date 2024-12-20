@@ -1,5 +1,14 @@
 {
     "tailscale-vpn adapter settings": "tailscale-vpn的适配器设置",
     "option1": "选项1",
-    "option2": "选项2"
+    "option2": "选项2",
+    "Client ID": "客户ID",
+    "Client Secret": "客户秘密",
+    "Update interval (in seconds)": "更新间隔",
+    "required": "必需的",
+    "secondes": "秒",
+    "tailscale_oauth": "<span style=''>Tailscale <a href='https://login.tailscale.com/admin/settings/oauth'>OAuth 客户端</a></span>",
+    "optional": "选修的",
+    "Enter a valid OAuth Client ID.": "输入有效的 OAuth 客户端 ID。",
+    "Enter a valid OAuth Client Secret.": "输入有效的 OAuth 客户端密码。"
 }

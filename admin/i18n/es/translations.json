@@ -1,5 +1,14 @@
 {
     "tailscale-vpn adapter settings": "Ajustes del adaptador para tailscale-vpn",
     "option1": "opción1",
-    "option2": "opción2"
+    "option2": "opción2",
+    "Client ID": "ID de cliente",
+    "Client Secret": "Secreto del cliente",
+    "Update interval (in seconds)": "Intervalo de actualización",
+    "required": "requerido",
+    "secondes": "artículos de segunda clase",
+    "tailscale_oauth": "<span style=''>Tailscale <a href='https://login.tailscale.com/admin/settings/oauth'>Cliente OAuth</a></span>",
+    "optional": "opcional",
+    "Enter a valid OAuth Client ID.": "Introduzca un ID de cliente de OAuth válido.",
+    "Enter a valid OAuth Client Secret.": "Ingrese un secreto de cliente OAuth válido."
 }

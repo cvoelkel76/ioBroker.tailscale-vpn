@@ -1,5 +1,14 @@
 {
     "tailscale-vpn adapter settings": "Налаштування адаптера для tailscale-vpn",
     "option1": "варіант1",
-    "option2": "варіант2"
+    "option2": "варіант2",
+    "Client ID": "ID клієнта",
+    "Client Secret": "Секрет клієнта",
+    "Update interval (in seconds)": "Інтервал оновлення",
+    "required": "потрібно",
+    "secondes": "секунд",
+    "tailscale_oauth": "<span style=''>Tailscale <a href='https://login.tailscale.com/admin/settings/oauth'>Клієнт OAuth</a></span>",
+    "optional": "необов'язковий",
+    "Enter a valid OAuth Client ID.": "Введіть дійсний ідентифікатор клієнта OAuth.",
+    "Enter a valid OAuth Client Secret.": "Введіть дійсний секрет клієнта OAuth."
 }

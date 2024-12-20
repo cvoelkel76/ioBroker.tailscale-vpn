@@ -2,15 +2,59 @@
     "i18n": true,
     "type": "panel",
     "items": {
-        "option1": {
-            "type": "checkbox",
-            "label": "option1",
-            "newLine": true
+        "_comment": {
+            "type": "staticText",
+            "text": "tailscale_oauth",
+            "style": {
+                "font-family": "Roboto, Helvetica, Arial, sans-serif",
+                "font-weight": 500,
+                "font-size": "1.25rem",
+                "color": "inherit"
+            }
         },
-        "option2": {
+        "tailnet": {
             "type": "text",
-            "label": "option2",
-            "newLine": true
+            "label": "Tailnet ID",
+            "help": "optional",
+            "noTranslation": true,
+            "newLine": true,
+            "sm": 12,
+            "md": 6,
+            "lg": 6
+        },
+        "clientid": {
+            "type": "password",
+            "label": "Client ID",
+            "help": "required",
+            "validator": "data.clientid",
+            "validatorErrorText": "Enter a valid OAuth Client ID.",
+            "validatorNoSaveOnError": true,
+            "newLine": true,
+            "sm": 12,
+            "md": 6,
+            "lg": 6
+        },
+        "secret": {
+            "type": "password",
+            "label": "Client Secret",
+            "help": "required",
+            "validator": "data.secret",
+            "validatorErrorText": "Enter a valid OAuth Client Secret.",
+            "validatorNoSaveOnError": true,
+            "newLine": true,
+            "sm": 12,
+            "md": 6,
+            "lg": 6
+        },
+        "interval": {
+            "type": "number",
+            "label": "Update interval",
+            "help": "seconds",
+            "newLine": true,
+            "min": 30,
+            "sm": 12,
+            "md": 6,
+            "lg": 6
         }
     }
 }
