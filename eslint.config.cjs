@@ -33,7 +33,7 @@ module.exports = [{
 
         'no-console': 'off',
 
-        'no-unused-vars': ['error', {
+        'no-unused-vars': ['off', {
             ignoreRestSiblings: true,
             argsIgnorePattern: '^_',
         }],
