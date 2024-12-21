@@ -9,7 +9,6 @@
 const utils = require('@iobroker/adapter-core');
 const axios = require('axios');
 const { CookieJar } = require('tough-cookie');
-const Json2iob = require('json2iob');
 const { HttpsCookieAgent } = require('http-cookie-agent/http');
 const qs = require('qs');
 
@@ -32,7 +31,7 @@ class TailscaleVpn extends utils.Adapter {
         // this.on('message', this.onMessage.bind(this));
         this.on('unload', this.onUnload.bind(this));
         this.apiUrl = 'https://api.tailscale.com/api/v2';
-        this.json2iob = new Json2iob(this);
+        this.session = {};
         const jar = new CookieJar();
         this.requestClient = axios.create({
             httpsAgent: new HttpsCookieAgent({
@@ -61,7 +60,18 @@ class TailscaleVpn extends utils.Adapter {
 
         if (this.session.access_token) {
             await this.getTailnetDevices();
+
+            this.updateInterval = setInterval(async () => {
+                await this.updateTailscaleData();
+              }, this.config.interval * 1000);
         }
+
+        this.refreshTokenInterval = setInterval(
+            () => {
+              this.refreshToken();
+            },
+            3600 * 1000,
+        );
 
     }
 
@@ -92,6 +102,11 @@ class TailscaleVpn extends utils.Adapter {
                 this.log.error('Login failed');
                 error.response && this.log.error(JSON.stringify(error.response.data));
             });
+    }
+
+    async refreshToken() {
+        this.log.debug('Refresh token');
+        await this.login();
     }
 
     async getTailnetDevices() {
@@ -125,7 +140,8 @@ class TailscaleVpn extends utils.Adapter {
                             native: {},
                         });
 
-                        this.json2iob.parse(id, device, { forceIndex: true });
+                        await this.json2iob_lite(device, id);
+
                     }
                 }
             })
@@ -135,17 +151,62 @@ class TailscaleVpn extends utils.Adapter {
             });
     }
 
+    async json2iob_lite(data, key)  {
+
+        for (const item of Object.keys(data)) {
+            
+            if(typeof data[item] == 'object') {
+                await this.setObjectNotExistsAsync(key + '.' + item, {
+                    type: 'channel',
+                    common: {
+                        name: item,
+                    },
+                    native: {},
+                });                        
+
+                if (data[item]) {
+                    this.json2iob_lite (data[item], key + '.' + item);
+                }
+
+            } else {
+
+                let state_role = 'value';
+
+                if (typeof data[item] == 'boolean') {
+                    state_role = 'indicator';
+                }
+
+                this.setObjectNotExists(key + '.' + item, {
+                    type: 'state',
+                    common: {
+                        name: item,
+                        type: typeof data[item],
+                        role: state_role,
+                        read: true,
+                        write: false,
+                    },
+                    native: {},
+                });    
+
+                this.setState(key + '.' + item, data[item], true);                    
+            }
+
+        }
+    }
+
+    async updateTailscaleData() {
+// on hold
+
+    }
+
     /**
      * Is called when adapter shuts down - callback has to be called under any circumstances!
      * @param {() => void} callback
      */
     onUnload(callback) {
         try {
-            // Here you must clear all timeouts or intervals that may still be active
-            // clearTimeout(timeout1);
-            // clearTimeout(timeout2);
-            // ...
-            // clearInterval(interval1);
+            this.setState('info.connection', false, true);
+            this.refreshTokenInterval && clearInterval(this.refreshTokenInterval);
 
             callback();
         } catch (e) {
