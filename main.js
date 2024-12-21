@@ -63,12 +63,12 @@ class TailscaleVpn extends utils.Adapter {
 
             this.updateInterval = setInterval(async () => {
                 await this.updateTailscaleData();
-              }, this.config.interval * 1000);
+            }, this.config.interval * 1000);
         }
 
         this.refreshTokenInterval = setInterval(
             () => {
-              this.refreshToken();
+                this.refreshToken();
             },
             3600 * 1000,
         );
@@ -154,7 +154,7 @@ class TailscaleVpn extends utils.Adapter {
     async json2iob_lite(data, key)  {
 
         for (const item of Object.keys(data)) {
-            
+
             if(typeof data[item] == 'object') {
                 await this.setObjectNotExistsAsync(key + '.' + item, {
                     type: 'channel',
@@ -162,7 +162,7 @@ class TailscaleVpn extends utils.Adapter {
                         name: item,
                     },
                     native: {},
-                });                        
+                });
 
                 if (data[item]) {
                     this.json2iob_lite (data[item], key + '.' + item);
@@ -186,16 +186,16 @@ class TailscaleVpn extends utils.Adapter {
                         write: false,
                     },
                     native: {},
-                });    
+                });
 
-                this.setState(key + '.' + item, data[item], true);                    
+                this.setState(key + '.' + item, data[item], true);
             }
 
         }
     }
 
     async updateTailscaleData() {
-// on hold
+        // on hold
 
     }
 
