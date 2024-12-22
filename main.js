@@ -51,7 +51,7 @@ class TailscaleVpn extends utils.Adapter {
         this.setState('info.connection', false, true);
 
         if (!this.config.tailnet) {
-            this.log.info('Tailnet ID not provided. Set Tailnet to default "-"');
+            this.log.debug('Tailnet ID not provided. Set Tailnet to default "-"');
             this.config.tailnet = '-';
         }
 
@@ -60,17 +60,17 @@ class TailscaleVpn extends utils.Adapter {
             return;
         }
 
-        await this.login();
+        await this.login('');
 
         if (this.session.access_token) {
-            await this.getTailnetData('devices','/devices?fields=all','id','name');
+            await this.getTailnetData('devices','/devices?fields=all','id','name','["authorized","name"]');
             await this.getTailnetData('users','/users?type=all','id','loginName');
-            await this.getTailnetData('policy_file','/acl?details=true','','');
-            await this.getTailnetData('dns','/dns/nameservers','','');
-            await this.getTailnetData('dns','/dns/preferences','','');
-            await this.getTailnetData('dns','/dns/searchpaths','','');
-            await this.getTailnetData('dns','/dns/split-dns','','');
-            await this.getTailnetData('settings','/settings','','');
+            await this.getTailnetData('policy_file','/acl?details=true');
+            await this.getTailnetData('dns','/dns/nameservers');
+            await this.getTailnetData('dns','/dns/preferences');
+            await this.getTailnetData('dns','/dns/searchpaths');
+            await this.getTailnetData('dns','/dns/split-dns');
+            await this.getTailnetData('settings','/settings');
             await this.getTailnetData('webhooks','/webhooks','endpointId','endpointId');
 
             this.updateInterval = setInterval(async () => {
@@ -84,8 +84,6 @@ class TailscaleVpn extends utils.Adapter {
             this.session.expires_in = Math.floor(this.session.expires_in / 60) * 60;
         }
 
-
-
         this.refreshTokenInterval = setInterval(
             () => {
                 this.refreshToken();
@@ -95,7 +93,10 @@ class TailscaleVpn extends utils.Adapter {
 
     }
 
-    async login(scope) {
+    /**
+    * @param {string} action 'refresh' or empty for initial login
+    */
+    async login(action) {
         this.log.debug('Login to Tailscale API '+ this.apiUrl);
         await this.requestClient({
             method: 'post',
@@ -110,7 +111,7 @@ class TailscaleVpn extends utils.Adapter {
         })
             .then((res) => {
                 if (res.data && res.data.access_token) {
-                    if (scope == 'refresh') {
+                    if (action == 'refresh') {
                         this.log.debug('Login successful');
                     } else {
                         this.log.info('Login successful');
@@ -135,7 +136,14 @@ class TailscaleVpn extends utils.Adapter {
         await this.login('refresh');
     }
 
-    async getTailnetData(node_name, url_path, item_id, item_name) {
+    /**
+    * @param {string} node_name JSON root node
+    * @param {string} url_path API path for the required data
+    * @param {string} [item_id=''] JSON element for iob root id
+    * @param {string} [item_name=''] JSON element for iob root name
+    * @param {object} [write=[]] Array of writable elements
+    */
+    async getTailnetData(node_name, url_path, item_id, item_name, write) {
         await this.requestClient({
             method: 'get',
             url: `${this.apiUrl}/tailnet/${this.config.tailnet}${url_path}`,
@@ -151,7 +159,7 @@ class TailscaleVpn extends utils.Adapter {
                 if (tmp) {
 
                     await this.setObjectNotExistsAsync(node_name, {
-                        type: 'folder',
+                        type: 'device',
                         common: {
                             name: node_name,
                         },
@@ -161,8 +169,9 @@ class TailscaleVpn extends utils.Adapter {
                     if(item_id) {
 
                         for (const item of tmp) {
-                            const id = node_name + '.' + item[item_id];
+                            const id = node_name + '.' + item[item_id].replace(this.FORBIDDEN_CHARS, '_');
                             const name = item[item_name];
+
                             await this.setObjectNotExistsAsync(id, {
                                 type: 'device',
                                 common: {
@@ -171,11 +180,11 @@ class TailscaleVpn extends utils.Adapter {
                                 native: {},
                             });
 
-                            await this.json2iob_lite(item, id);
+                            await this.json2iob_lite(item, id, write);
 
                         }
                     } else {
-                        await this.json2iob_lite(tmp, node_name);
+                        await this.json2iob_lite(tmp, node_name, write);
                     }
                 }
             })
@@ -185,12 +194,19 @@ class TailscaleVpn extends utils.Adapter {
             });
     }
 
-    async json2iob_lite(data, key)  {
+    /**
+    * @param {any} data JSON Payload
+    * @param {string} path iob path
+    * @param {object} [write=[]] Array of writable elements
+    */
+    async json2iob_lite(data, path, write)  {
 
         for (const item of Object.keys(data)) {
 
+            const format_id = item.replace(this.FORBIDDEN_CHARS, '_');
+
             if(typeof data[item] == 'object' && data[item] != null) {
-                await this.setObjectNotExistsAsync(key + '.' + item, {
+                await this.setObjectNotExistsAsync(path + '.' + format_id, {
                     type: 'channel',
                     common: {
                         name: item,
@@ -199,30 +215,41 @@ class TailscaleVpn extends utils.Adapter {
                 });
 
                 if (data[item]) {
-                    this.json2iob_lite (data[item], key + '.' + item);
+                    this.json2iob_lite (data[item], path + '.' + format_id, write);
                 }
 
             } else {
 
                 let state_role = 'value';
+                let write_state = false;
 
+                if (Array.isArray(write)) {
+                    if (write.includes(item)) {
+                        write_state = true;
+                    }
+                }
                 if (typeof data[item] == 'boolean') {
                     state_role = 'indicator';
                 }
 
-                this.setObjectNotExists(key + '.' + item, {
+                await this.setObjectNotExistsAsync(path + '.' + format_id, {
                     type: 'state',
                     common: {
                         name: item,
                         type: typeof data[item],
+                        //type: 'string',
                         role: state_role,
                         read: true,
-                        write: false,
+                        write: write_state,
                     },
                     native: {},
                 });
 
-                this.setState(key + '.' + item, data[item], true);
+                if (data[item] == null){
+                    data[item] = '';
+                }
+
+                this.setState(path + '.' + format_id, data[item], true);
             }
 
         }
@@ -230,6 +257,8 @@ class TailscaleVpn extends utils.Adapter {
 
     async updateTailscaleData() {
         // on hold
+        this.log.info('Update');
+        await this.getTailnetData('devices','/devices?fields=all','id','name','["authorized","name"]');
 
     }
 
@@ -243,6 +272,7 @@ class TailscaleVpn extends utils.Adapter {
             this.refreshTokenInterval && clearInterval(this.refreshTokenInterval);
 
             callback();
+
         } catch (e) {
             callback();
         }

@@ -1,14 +1,12 @@
 {
-    "tailscale-vpn adapter settings": "Настройки адаптера для tailscale-vpn",
-    "option1": "вариант 1",
-    "option2": "вариант 2",
+    "tailscale-vpn adapter settings": "Настройки адаптера для Tailscale-VPN",
     "Client ID": "Идентификатор клиента",
     "Client Secret": "Секрет клиента",
     "Update interval (in seconds)": "Интервал обновления",
     "required": "необходимый",
     "secondes": "секунды",
-    "tailscale_oauth": "<span style=''>Tailscale <a href='https://login.tailscale.com/admin/settings/oauth'>Клиент OAuth</a></span>",
     "optional": "необязательный",
+    "tailscale_oauth": "Tailscale <a href='https://login.tailscale.com/admin/settings/oauth'>Клиент OAuth</a>",
     "Enter a valid OAuth Client ID.": "Введите действительный идентификатор клиента OAuth.",
     "Enter a valid OAuth Client Secret.": "Введите действительный секрет клиента OAuth."
 }
